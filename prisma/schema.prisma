@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AsyncOperation {
+  id        String        @id @default(dbgenerated("public.gen_random_uuid()")) @db.Uuid
+  opType    OperationType
+  complete  Boolean       @default(false)
+  success   Boolean?      @default(false)
+  error     String?
+  payload   Json?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now())
+}
+
+model BinanceCurrency {
+  id                         String              @id @default(dbgenerated("public.gen_random_uuid()")) @db.Uuid
+  symbol                     String              @unique
+  status                     BinanceSymbolStatus
+  baseAsset                  String
+  baseAssetPrecision         Int?
+  quoteAsset                 String
+  quotePrecision             Int?
+  quoteAssetPrecision        Int?
+  baseCommissionPrecision    Int?
+  quoteCommissionPrecision   Int?
+  allowsLimit                Boolean?            @default(false)
+  allowsMarket               Boolean?            @default(false)
+  allowsStopLoss             Boolean?            @default(false)
+  allowsStopLossLimit        Boolean?            @default(false)
+  allowsTakeProfit           Boolean?            @default(false)
+  allowsTakeProfitLimit      Boolean?            @default(false)
+  allowsLimitMaker           Boolean?            @default(false)
+  icebergAllowed             Boolean?            @default(false)
+  ocoAllowed                 Boolean?            @default(false)
+  quoteOrderQtyMarketAllowed Boolean?            @default(false)
+  isSpotTradingAllowed       Boolean?            @default(false)
+  isMarginTradingAllowed     Boolean?            @default(false)
+  spotPermission             Boolean?            @default(false)
+  leveragedPermission        Boolean?            @default(false)
+  marginPermission           Boolean?            @default(false)
+  lastPrice                  String?
+  openPrice                  String?
+  highPrice                  String?
+  lowPrice                   String?
+  priceChange                String?
+  priceChangePercent         String?
+  minPrice                   String?
+  maxPrice                   String?
+  tickSize                   String?
+  multiplierUp               String?
+  multiplierDown             String?
+  percentAvgPriceMins        Float?
+  minQty                     String?
+  maxQty                     String?
+  stepSize                   String?
+  minNotional                String?
+  applyToMarket              Boolean?            @default(false)
+  minNotionalAvgPriceMins    Float?
+  icebergLimit               Float?
+  marketMinQty               String?
+  marketMaxQty               String?
+  marketStepSize             String?
+  maxNumOrders               Int?
+  maxNumAlgoOrders           Int?
+  createdAt                  DateTime            @default(now())
+  updatedAt                  DateTime            @default(now())
+}
+
+model BitmexCurrency {
+  id               String   @id @default(dbgenerated("public.gen_random_uuid()")) @db.Uuid
+  active           Boolean? @default(false)
+  symbol           String   @unique
+  underlying       String
+  quoteCurrency    String
+  fractionalDigits Int?
+  lastPrice        Decimal?
+  markPrice        Decimal?
+  maxPrice         Decimal?
+  tickSize         Decimal?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now())
+}
+
+model ExchangeAccount {
+  id              String     @id @default(dbgenerated("public.gen_random_uuid()")) @db.Uuid
+  active          Boolean    @default(false)
+  exchange        Exchange
+  membershipId    String
+  remoteAccountId String?
+  apiKey          String?
+  apiSecret       String?
+  lastHeartbeat   DateTime   @default(now())
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @default(now())
+  Order           Order[]
+  Position        Position[]
+
+  @@unique([exchange, membershipId], name: "ExchangeAccount_exchange_membershipId_key")
+}
+
+model Order {
+  id                  String           @id @default(dbgenerated("public.gen_random_uuid()")) @db.Uuid
+  orderSetId          String           @db.Uuid
+  exchangeAccountId   String           @db.Uuid
+  clOrderId           String?          @unique
+  clOrderLinkId       String?
+  symbol              String
+  exchange            Exchange
+  side                OrderSide
+  closeOrder          Boolean
+  lastTimestamp       DateTime?
+  orderType           OrderType?
+  price               Decimal?
+  avgPrice            Decimal?
+  quantity            Decimal?
+  filledQty           Decimal?
+  status              OrderStatus
+  leverage            Float
+  stopPrice           Decimal?
+  trailingStopPercent Float?
+  stopTriggerType     StopTriggerType?
+  pegOffsetValue      Decimal?
+  pegPriceType        PegPriceType?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @default(now())
+  error               String?
+  remoteOrderId       String?          @unique
+  ExchangeAccount     ExchangeAccount  @relation(fields: [exchangeAccountId], references: [id])
+  OrderSet            OrderSet         @relation(fields: [orderSetId], references: [id])
+}
+
+model OrderSet {
+  id                  String           @id @default(dbgenerated("public.gen_random_uuid()")) @db.Uuid
+  exchange            Exchange
+  symbol              String
+  description         String?
+  groupId             String
+  orderType           OrderType
+  price               Decimal?
+  percent             Float
+  side                OrderSide
+  closeOrderSet       Boolean
+  leverage            Float
+  stopPrice           Decimal?
+  trailingStopPercent Float?
+  stopTriggerType     StopTriggerType?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @default(now())
+  Order               Order[]
+}
+
+model Position {
+  id                String          @id @default(dbgenerated("public.gen_random_uuid()")) @db.Uuid
+  exchangeAccountId String          @db.Uuid
+  symbol            String
+  isOpen            Boolean         @default(false)
+  exchange          Exchange
+  side              PositionSide
+  avgPrice          Decimal?
+  quantity          Decimal?
+  leverage          Float?
+  markPrice         Decimal?
+  margin            Decimal?
+  maintenanceMargin Decimal?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @default(now())
+  ExchangeAccount   ExchangeAccount @relation(fields: [exchangeAccountId], references: [id])
+
+  @@unique([symbol, exchangeAccountId], name: "Position_symbol_exchangeAccountId_key")
+}
+
+enum BinanceSymbolStatus {
+  PRE_TRADING
+  TRADING
+  POST_TRADING
+  END_OF_DAY
+  HALT
+  AUCTION_MATCH
+  BREAK
+}
+
+enum Exchange {
+  BINANCE
+  BITMEX
+}
+
+enum OperationType {
+  CREATE_BINANCE_ORDER
+  UPDATE_BINANCE_ORDER
+  CANCEL_BINANCE_ORDER
+  CREATE_BINANCE_ACCOUNT
+  UPDATE_BINANCE_ACCOUNT
+  DELETE_BINANCE_ACCOUNT
+  DISABLE_BINANCE_ACCOUNT
+  CREATE_BITMEX_ORDER
+  UPDATE_BITMEX_ORDER
+  CANCEL_BITMEX_ORDER
+  CREATE_BITMEX_ACCOUNT
+  UPDATE_BITMEX_ACCOUNT
+  DELETE_BITMEX_ACCOUNT
+  DISABLE_BITMEX_ACCOUNT
+  CLOSE_BITMEX_POSITION
+  ADD_STOP_BITMEX_POSITION
+  ADD_TSL_BITMEX_POSITION
+  CLEAR_BITMEX_NODE
+}
+
+enum OrderSide {
+  BUY
+  SELL
+}
+
+enum OrderStatus {
+  NEW
+  FILLED
+  PARTIALLY_FILLED
+  CANCELED
+  REJECTED
+}
+
+enum OrderType {
+  MARKET
+  LIMIT
+}
+
+enum PegPriceType {
+  LastPeg
+  MidPricePeg
+  MarketPeg
+  PrimaryPeg
+  TrailingStopPeg
+}
+
+enum PositionSide {
+  LONG
+  SHORT
+}
+
+enum StopTriggerType {
+  LAST_PRICE
+  MARK_PRICE
+}

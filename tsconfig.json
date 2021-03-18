@@ -1,0 +1,46 @@
+{
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "composite": true,
+    "target": "es2017",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    //    "sourceMap": true,
+    //    "declaration": true,
+    //    "declarationMap": true,
+    //    "removeComments": true,
+    //    "strict": true,
+    //    "noImplicitAny": false,
+    //    "noImplicitReturns": true,
+    //    "noFallthroughCasesInSwitch": true,
+    //    "noUnusedParameters": false,
+    //    "noUnusedLocals": false,
+    //    "forceConsistentCasingInFileNames": true,
+    "lib": [
+      "es2017",
+      "esnext.asynciterable",
+      "dom",
+      "ES2020.Promise"
+    ],
+    "types": [
+      "node",
+      //      "apollo-env"
+    ],
+    "jsx": "react",
+    "baseUrl": ".",
+    "plugins": [
+      {
+        "name": "typescript-tslint-plugin"
+      }
+    ]
+  },
+  "include": [
+    "./src/**/*"
+  ],
+  "exclude": [
+    "**/__tests__/*",
+    "**/__mocks__/*"
+  ]
+}
