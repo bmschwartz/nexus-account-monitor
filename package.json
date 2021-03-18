@@ -3,7 +3,10 @@
   "scripts": {
     "start": "node dist/server",
     "clean": "rm -rf dist",
-    "build": "npm -s run clean && tsc --build tsconfig.json",
+    "build": "npm -s run clean && npm -s run generate && tsc --build tsconfig.json",
+    "generate": "npm -s run generate:prisma",
+    "generate:prisma": "prisma generate",
+    "postinstall": "npm -s run generate",
     "dev": "ts-node-dev src/server --no-notify --respawn --transpileOnly",
     "lint:ts": "tslint 'src/**/*.{ts,tsx,js}'"
   },
