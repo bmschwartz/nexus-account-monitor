@@ -207,6 +207,47 @@ export class MessageClient {
   }
 
   async _accountUpdatedConsumer(prisma: PrismaClient, message: Amqp.Message) {
+    const { success, accountId, error }: AccountOperationResponse = message.getContent()
+    const { correlationId: operationId } = message.properties
+
+    logger.debug({ message: "[_accountUpdatedConsumer] Received message" })
+
+    if (!operationId) {
+      logger.error({ message: "[_accountUpdatedConsumer] Missing operationId" })
+      message.reject(false)
+      return
+    }
+
+    const operation = await completeAsyncOperation(prisma, operationId, success, [error])
+
+    if (!operation) {
+      message.reject(false)
+      return
+    }
+
+    try {
+      if (operation && accountId && success) {
+        logger.info({ message: "[_accountUpdatedConsumer] Updated Account", accountId, opType: operation.opType })
+        switch (operation.opType) {
+          case OperationType.UPDATE_BITMEX_ACCOUNT:
+          case OperationType.UPDATE_BINANCE_ACCOUNT: {
+            await prisma.exchangeAccount.update({
+              where: { id: accountId },
+              data: {
+                active: true,
+                updatedAt: new Date(),
+              },
+            })
+            break;
+          }
+          default:
+            break;
+        }
+      }
+    } catch (e) {
+      logger.error({ message: "[_accountUpdatedConsumer] Update error", error: e })
+    }
+
     message.ack()
   }
 
