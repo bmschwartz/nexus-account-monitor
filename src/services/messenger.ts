@@ -284,7 +284,7 @@ export class MessageClient {
       throw new Error("Could not create asyncOperation")
     }
 
-    const message = new Amqp.Message(JSON.stringify(payload),
+    const message = new Amqp.Message(JSON.stringify({ ...payload, timestamp: new Date() }),
       { persistent: true, correlationId: String(op.id), expiration: ASYNC_OPERATION_TTL },
     )
     this._sendBitmexExchange?.send(message, SETTINGS["BITMEX_CREATE_ACCOUNT_CMD_KEY"])
@@ -308,7 +308,7 @@ export class MessageClient {
       throw new Error("Could not create asyncOperation")
     }
 
-    const message = new Amqp.Message(JSON.stringify(payload),
+    const message = new Amqp.Message(JSON.stringify({ ...payload, timestamp: new Date() }),
       { persistent: true, correlationId: String(op.id), expiration: ASYNC_OPERATION_TTL },
     )
     this._sendBitmexExchange?.send(message, `${SETTINGS["BITMEX_UPDATE_ACCOUNT_CMD_KEY_PREFIX"]}${accountId}`)
@@ -341,7 +341,7 @@ export class MessageClient {
       throw new Error("Could not create asyncOperation")
     }
 
-    const message = new Amqp.Message(JSON.stringify(payload),
+    const message = new Amqp.Message(JSON.stringify({ ...payload, timestamp: new Date() }),
       { persistent: true, correlationId: String(op.id), expiration: ASYNC_OPERATION_TTL },
     )
     this._sendBitmexExchange?.send(message, `${SETTINGS["BITMEX_DELETE_ACCOUNT_CMD_KEY_PREFIX"]}${accountId}`)
@@ -366,7 +366,7 @@ export class MessageClient {
       throw new Error("Could not create asyncOperation")
     }
 
-    const message = new Amqp.Message(JSON.stringify(payload),
+    const message = new Amqp.Message(JSON.stringify({ ...payload, timestamp: new Date() }),
       { persistent: true, correlationId: String(op.id), expiration: ASYNC_OPERATION_TTL },
     )
     this._sendBinanceExchange?.send(message, SETTINGS["BINANCE_CREATE_ACCOUNT_CMD_KEY"])
@@ -392,7 +392,7 @@ export class MessageClient {
       throw new Error("Could not create asyncOperation")
     }
 
-    const message = new Amqp.Message(JSON.stringify(payload),
+    const message = new Amqp.Message(JSON.stringify({ ...payload, timestamp: new Date() }),
       { persistent: true, correlationId: String(op.id), expiration: ASYNC_OPERATION_TTL },
     )
     this._sendBinanceExchange?.send(message, `${SETTINGS["BINANCE_DELETE_ACCOUNT_CMD_KEY_PREFIX"]}${accountId}`)
