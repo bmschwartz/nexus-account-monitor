@@ -8,7 +8,7 @@ datasource db {
 }
 
 model AsyncOperation {
-  id        String        @id @default(dbgenerated("public.gen_random_uuid()")) @db.Uuid
+  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   opType    OperationType
   complete  Boolean       @default(false)
   success   Boolean?      @default(false)
@@ -19,7 +19,7 @@ model AsyncOperation {
 }
 
 model BinanceCurrency {
-  id                         String              @id @default(dbgenerated("public.gen_random_uuid()")) @db.Uuid
+  id                         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   symbol                     String              @unique
   status                     BinanceSymbolStatus
   baseAsset                  String
@@ -73,7 +73,7 @@ model BinanceCurrency {
 }
 
 model BitmexCurrency {
-  id               String   @id @default(dbgenerated("public.gen_random_uuid()")) @db.Uuid
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   active           Boolean? @default(false)
   symbol           String   @unique
   underlying       String
@@ -88,7 +88,7 @@ model BitmexCurrency {
 }
 
 model ExchangeAccount {
-  id              String     @id @default(dbgenerated("public.gen_random_uuid()")) @db.Uuid
+  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   active          Boolean    @default(false)
   exchange        Exchange
   membershipId    String
@@ -104,11 +104,74 @@ model ExchangeAccount {
   @@unique([exchange, membershipId], name: "ExchangeAccount_exchange_membershipId_key")
 }
 
+model Group {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String              @unique
+  description       String
+  active            Boolean             @default(true)
+  telegram          String?
+  discord           String?
+  email             String?
+  payoutAddress     String?
+  payInPlatform     Boolean             @default(false)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @default(now())
+  GroupMembership   GroupMembership[]
+  GroupSubscription GroupSubscription[]
+}
+
+model GroupMembership {
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  memberId           String              @db.Uuid
+  groupId            String              @db.Uuid
+  active             Boolean             @default(false)
+  role               MembershipRole      @default(MEMBER)
+  status             MembershipStatus    @default(PENDING)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @default(now())
+  Group              Group               @relation(fields: [groupId], references: [id])
+  MemberSubscription MemberSubscription?
+
+  @@unique([memberId, groupId], name: "GroupMembership_memberId_groupId_key")
+}
+
+model GroupSubscription {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  groupId            String               @db.Uuid
+  duration           Int                  @default(1)
+  price              Float
+  description        String?
+  active             Boolean              @default(false)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @default(now())
+  Group              Group                @relation(fields: [groupId], references: [id])
+  MemberSubscription MemberSubscription[]
+
+  @@unique([id, groupId], name: "GroupSubscription_id_groupId_key")
+}
+
+model MemberSubscription {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  groupSubscriptionId String                @db.Uuid
+  groupMembershipId   String                @unique @db.Uuid
+  recurring           Boolean               @default(true)
+  startDate           DateTime?
+  endDate             DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @default(now())
+  GroupMembership     GroupMembership       @relation(fields: [groupMembershipId], references: [id])
+  GroupSubscription   GroupSubscription     @relation(fields: [groupSubscriptionId], references: [id])
+  SubscriptionInvoice SubscriptionInvoice[]
+
+  @@unique([groupMembershipId, groupSubscriptionId], name: "MemberSubscription_groupMembershipId_groupSubscriptionId_key")
+}
+
 model Order {
-  id                  String           @id @default(dbgenerated("public.gen_random_uuid()")) @db.Uuid
+  id                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   orderSetId          String           @db.Uuid
   exchangeAccountId   String           @db.Uuid
   clOrderId           String?          @unique
+  remoteOrderId       String?          @unique
   clOrderLinkId       String?
   symbol              String
   exchange            Exchange
@@ -127,16 +190,15 @@ model Order {
   stopTriggerType     StopTriggerType?
   pegOffsetValue      Decimal?
   pegPriceType        PegPriceType?
+  error               String?
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @default(now())
-  error               String?
-  remoteOrderId       String?          @unique
   ExchangeAccount     ExchangeAccount  @relation(fields: [exchangeAccountId], references: [id])
   OrderSet            OrderSet         @relation(fields: [orderSetId], references: [id])
 }
 
 model OrderSet {
-  id                  String           @id @default(dbgenerated("public.gen_random_uuid()")) @db.Uuid
+  id                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   exchange            Exchange
   symbol              String
   description         String?
@@ -155,8 +217,16 @@ model OrderSet {
   Order               Order[]
 }
 
+model PlatformFee {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  price     Float
+  active    Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
 model Position {
-  id                String          @id @default(dbgenerated("public.gen_random_uuid()")) @db.Uuid
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   exchangeAccountId String          @db.Uuid
   symbol            String
   isOpen            Boolean         @default(false)
@@ -175,6 +245,33 @@ model Position {
   @@unique([symbol, exchangeAccountId], name: "Position_symbol_exchangeAccountId_key")
 }
 
+model SubscriptionInvoice {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  subscriptionId     String             @db.Uuid
+  email              String
+  btcPaid            Decimal?
+  btcPrice           Decimal?
+  usdPrice           Decimal
+  status             InvoiceStatus
+  remoteId           String?
+  token              String?
+  periodStart        DateTime?
+  periodEnd          DateTime?
+  expiresAt          DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @default(now())
+  MemberSubscription MemberSubscription @relation(fields: [subscriptionId], references: [id])
+}
+
+model User {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String   @unique
+  username  String   @unique
+  userType  UserType @default(MEMBER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
 enum BinanceSymbolStatus {
   PRE_TRADING
   TRADING
@@ -188,6 +285,27 @@ enum BinanceSymbolStatus {
 enum Exchange {
   BINANCE
   BITMEX
+}
+
+enum InvoiceStatus {
+  NEW
+  PAID
+  CONFIRMED
+  COMPLETE
+  EXPIRED
+  INVALID
+}
+
+enum MembershipRole {
+  MEMBER
+  ADMIN
+  TRADER
+}
+
+enum MembershipStatus {
+  PENDING
+  APPROVED
+  DENIED
 }
 
 enum OperationType {
@@ -229,6 +347,12 @@ enum OrderType {
   LIMIT
 }
 
+enum PayoutCurrency {
+  BTC
+  ETH
+  LTC
+}
+
 enum PegPriceType {
   LastPeg
   MidPricePeg
@@ -245,4 +369,10 @@ enum PositionSide {
 enum StopTriggerType {
   LAST_PRICE
   MARK_PRICE
+}
+
+enum UserType {
+  OWNER
+  TRADER
+  MEMBER
 }
